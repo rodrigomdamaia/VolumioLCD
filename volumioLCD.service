@@ -1,0 +1,13 @@
+[Unit]
+Description=LCD server for music player
+
+[Service]
+# Command to execute when the service is started
+# Wait port 3000 to be available
+ExecStartPre=/bin/sh -c "while ! /bin/nc -z localhost 3000 ; do sleep 1 ; done"
+ExecStart=/usr/bin/python3 -m app.volumioLCD
+WorkingDirectory=/home/volumio/volumioLCD
+User=volumio
+
+[Install]
+WantedBy = multi-user.target
