@@ -3,6 +3,9 @@ import threading
 from socket import socket
 
 from Adafruit_CharLCD import Adafruit_CharLCD
+
+#import adafruit_character_lcd.character_lcd as character_lcd
+
 from socketIO_client import SocketIO
 import socketio
 
@@ -140,10 +143,132 @@ class socketVolumio:
 class displayLCD:
     _running = False
 
+    def createSpecialChar(self):
+        play_char = [
+            0b00000,
+            0b01000,
+            0b01100,
+            0b01110,
+            0b01100,
+            0b01000,
+            0b00000,
+            0b00000
+        ]
+        stop_char = [
+            0b00000,
+            0b11111,
+            0b11111,
+            0b11111,
+            0b11111,
+            0b11111,
+            0b00000,
+            0b00000,
+        ]
+        pause_char = [
+            0b00000,
+            0b11011,
+            0b11011,
+            0b11011,
+            0b11011,
+            0b11011,
+            0b00000,
+            0b00000,
+        ]
+
+        cedilha_char = [
+            0b00000,
+            0b00000,
+            0b01110,
+            0b10001,
+            0b10000,
+            0b10101,
+            0b01110,
+            0b01000,
+        ]
+
+        self.lcd.create_char(0, play_char)
+        #self.lcd.clear()
+        self.lcd.create_char(1, stop_char)
+        #self.lcd.clear()
+        self.lcd.create_char(2, pause_char)
+        #self.lcd.clear()
+        self.lcd.create_char(3, cedilha_char)
+        self.lcd.clear()
+
+    def traduzirAcentos(self,text):
+        newText = ''
+        newText = text.replace('ç', '\x03')
+        newText = newText.replace('Ç', '\x03')
+        newText = newText.replace('á', 'a')
+        newText = newText.replace('à', 'a')
+        newText = newText.replace('â', 'a')
+        newText = newText.replace('ä', 'a')
+        newText = newText.replace('ã', 'a')
+        newText = newText.replace('Á', 'A')
+        newText = newText.replace('À', 'A')
+        newText = newText.replace('Â', 'A')
+        newText = newText.replace('Ä', 'A')
+        newText = newText.replace('Ã', 'A')
+
+        newText = newText.replace('é', 'e')
+        newText = newText.replace('è', 'e')
+        newText = newText.replace('ê', 'e')
+        newText = newText.replace('ë', 'e')
+        newText = newText.replace('É', 'E')
+        newText = newText.replace('È', 'E')
+        newText = newText.replace('Ê', 'E')
+        newText = newText.replace('Ë', 'E')
+
+        newText = newText.replace('í', 'i')
+        newText = newText.replace('ì', 'i')
+        newText = newText.replace('î', 'i')
+        newText = newText.replace('ï', 'i')
+        newText = newText.replace('Í', 'I')
+        newText = newText.replace('Ì', 'I')
+        newText = newText.replace('Î', 'I')
+        newText = newText.replace('Ï', 'I')
+
+        newText = newText.replace('ó', 'o')
+        newText = newText.replace('ò', 'o')
+        newText = newText.replace('ô', 'o')
+        newText = newText.replace('ö', 'o')
+        newText = newText.replace('õ', 'o')
+        newText = newText.replace('Ó', 'O')
+        newText = newText.replace('Ò', 'O')
+        newText = newText.replace('Ô', 'O')
+        newText = newText.replace('Ö', 'O')
+        newText = newText.replace('Õ', 'O')
+
+
+        newText = newText.replace('ú', 'u')
+        newText = newText.replace('ù', 'u')
+        newText = newText.replace('û', 'u')
+        newText = newText.replace('ü', 'u')
+        newText = newText.replace('Ú', 'U')
+        newText = newText.replace('Ù', 'U')
+        newText = newText.replace('Û', 'U')
+        newText = newText.replace('Ü', 'U')
+
+        return newText
+
+
+    def convertStatusToChar(self, status):
+        if status == u'play':
+            return '\x00'
+        elif status == 'stop':
+            return '\x01'
+        elif status == 'pause':
+            return '\x02'
+        else:
+            return ''
+
     def __init__(self,musicdata, coluna = 0,  linha = 0, scroll = False, delay= 0.5):
         self.scroll = scroll
         self.delay = delay
         self.lcd = Adafruit_CharLCD(rs=7, en=8, d4=25, d5=24, d6=23, d7=18, cols=16, lines=2)
+
+        self.createSpecialChar()
+        #time.sleep(10)
         #self.text = text
         self.musicdata = musicdata
         self.coluna = coluna
@@ -170,7 +295,7 @@ class displayLCD:
             if self.musicdata[u'artist'] == u'' and self.musicdata[u'title'] == u'':
                 text = u'  Volumio v3.0  '
             else:
-                text = str(self.musicdata[u'artist'] + ' - ' + self.musicdata[u'title'])
+                text = self.traduzirAcentos(self.musicdata[u'artist'] + ' - ' + self.musicdata[u'title'])
             self.lcd.set_cursor(self.coluna, self.linha)
             self.lcd.message(text)
             #self.lcd.set_cursor(self.coluna, 1)
@@ -182,13 +307,9 @@ class displayLCD:
                     self.lcd.message(text)
                     self.lcd.set_cursor(self.coluna, 1)
                     self.lcd.message(str(self.musicdata[u'elapsed_formatted']))
-                    self.lcd.set_cursor(11, 1)
-                    if self.musicdata[u'status'] == u'pause':
-                        self.lcd.message(str(self.musicdata[u'status']))
-                    else:
-                        self.lcd.message(str(' ' + self.musicdata[u'status']))
-
-                    #print(text)
+                    #self.lcd.set_cursor(11, 1)
+                    self.lcd.set_cursor(15, 1)
+                    self.lcd.message(self.convertStatusToChar(self.musicdata[u'status']))
                     time.sleep(0.5)
                     i=0
                     for i in range(len(text) - 15):
@@ -203,21 +324,15 @@ class displayLCD:
                         self.lcd.message(text[i:i+16])
                         self.lcd.set_cursor(self.coluna, 1)
                         self.lcd.message(str(self.musicdata[u'elapsed_formatted']))
-                        self.lcd.set_cursor(11, 1)
-                        if self.musicdata[u'status'] == u'pause':
-                            self.lcd.message(str(self.musicdata[u'status']))
-                        else:
-                            self.lcd.message(str(' ' + self.musicdata[u'status']))
+                        self.lcd.set_cursor(15, 1)
+                        self.lcd.message(self.convertStatusToChar(self.musicdata[u'status']))
                         time.sleep(self.delay)
                     self.lcd.set_cursor(self.coluna, self.linha)
                     self.lcd.message(text[i:i+16])
                     self.lcd.set_cursor(self.coluna, 1)
                     self.lcd.message(str(self.musicdata[u'elapsed_formatted']))
-                    self.lcd.set_cursor(11, 1)
-                    if self.musicdata[u'status'] == u'pause':
-                        self.lcd.message(str(self.musicdata[u'status']))
-                    else:
-                        self.lcd.message(str(' ' + self.musicdata[u'status']))
+                    self.lcd.set_cursor(15, 1)
+                    self.lcd.message(self.convertStatusToChar(self.musicdata[u'status']))
                     time.sleep(0.5)
                 else:
                     #print("menor q 16")
@@ -232,8 +347,10 @@ class displayLCD:
                     else:
                         self.lcd.set_cursor(self.coluna, 1)
                         self.lcd.message(str(self.musicdata[u'elapsed_formatted']))
-                        self.lcd.set_cursor(12, 1)
-                        self.lcd.message(str(self.musicdata[u'status']))
+                        self.lcd.set_cursor(15, 1)
+                        self.lcd.message(self.convertStatusToChar(self.musicdata[u'status']))
+                        '''self.lcd.set_cursor(12, 1)
+                        self.lcd.message(str(self.musicdata[u'status']))'''
                     time.sleep(1)
             else:
                 if not self._running:
