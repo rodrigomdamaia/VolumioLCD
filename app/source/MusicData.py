@@ -1,4 +1,4 @@
-class Musicdata:
+class MusicData:
 
     status: str
     position: int
@@ -11,7 +11,7 @@ class Musicdata:
     codec: str
     seek: int
     elapsed: float
-    duration: int
+    duration: str
     length: int
     samplerate: str
     bitdepth: str

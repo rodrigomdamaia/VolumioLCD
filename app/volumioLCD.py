@@ -1,69 +1,9 @@
 import time
 import threading
 from Adafruit_CharLCD import Adafruit_CharLCD
-#import source.MusicData as MusicData
-from source.MusicData import Musicdata
+from .source import MusicData as md
 from socketIO_client import SocketIO
 import socketio
-
-'''class Musicdata:
-    status: str
-    position: int
-    artist: str
-    title: str
-    album: str
-    albumArt: str
-    trackType: str
-    trackArt: str
-    codec: str
-    seek: int
-    duration: int
-    samplerate: str
-    bitdepth: str
-    channels: int
-    random: bool
-    repeat: bool
-    repeatSingle: bool
-    consume: bool
-    stream: str
-
-    musicdata_init = {
-        'musicdatasource': u"",
-        'stream': u"",
-        'actPlayer': u"",
-        'artist': u"",
-        'title': u"Volumio v3.0",
-        'uri': u"",
-        'encoding': u"",
-        'tracktype': u"",
-        'bitdepth': u"",
-        'bitrate': u"",
-        'samplerate': u"",
-        'elapsed_formatted': u"",
-        'album': u"",
-        'elapsed': -1,
-        'channels': 0,
-        'length': 0,
-        'remaining': u"",
-        'volume': -1,
-        'repeat': False,
-        'single': False,
-        'random': False,
-        'playlist_display': u"",
-        'playlist_position': -1,
-        'playlist_length': -1,
-
-        'my_name': u"",  # Volumio 2 only
-
-        # Deprecated values
-        'current': -1,
-        'duration': -1,
-        'position': u"",
-        'playlist_count': -1,
-        'type': u""
-    }'''
-
-
 
 class socketVolumio:
     def __init__(self):
@@ -76,7 +16,7 @@ class socketVolumio:
                 time.sleep(1)
                 print("Error connecting to socket")
 
-        self.musicdata = Musicdata()
+        self.musicdata = md.MusicData()
         #self.musicdata = Musicdata.musicdata_init.copy()
 
         self._running = False
@@ -128,6 +68,7 @@ class socketVolumio:
         else:
             self.musicdata.status = u'stop'
 
+        self.musicdata.position = playerState[u'position'] if u'position' in playerState else u'1'
         self.musicdata.album = playerState[u'album'] if u'album' in playerState else u''
         self.musicdata.artist = playerState[u'artist'] if u'artist' in playerState else u'Volumio'
         self.musicdata.title = playerState[u'title'] if u'title' in playerState else u'V3.0'
@@ -136,8 +77,7 @@ class socketVolumio:
         self.musicdata.trackType = playerState[u'trackType'] if u'trackType' in playerState else u''
         self.musicdata.codec = playerState[u'codec'] if u'codec' in playerState else u''
         self.musicdata.seek = playerState[u'seek'] if u'seek' in playerState else 0
-        self.musicdata.duration = playerState[u'duration'] if u'duration' in playerState else 0
-
+        self.musicdata.duration = time.strftime(u"%M:%S", time.gmtime(int(playerState[u'duration']))) if u'duration' in playerState else 0
         self.musicdata.elapsed = int(self.floatn(playerState[u'seek']) / 1000) if u'seek' in playerState else 0
         self.musicdata.samplerate = playerState[u'samplerate'] if u'samplerate' in playerState else u''
         self.musicdata.bitdepth = playerState[u'bitdepth'] if u'bitdepth' in playerState else u''
@@ -159,7 +99,8 @@ class socketVolumio:
         self.musicdata.remaining = remaining
         self.musicdata.elapsed_formatted = timepos
 
-        #print(self.musicdata)
+        #print(self.musicdata.remaining)
+        #print(self.musicdata.duration)
 
 class displayLCD:
     _running = False
@@ -316,7 +257,7 @@ class displayLCD:
             if self.musicdata.artist == u'' and self.musicdata.title == u'':
                 text = u'  Volumio v3.0  '
             else:
-                text = self.traduzirAcentos(self.musicdata.artist + ' - ' + self.musicdata.title)
+                text = self.traduzirAcentos(str(self.musicdata.position) + '.' + self.musicdata.artist + ' - ' + self.musicdata.title + ' (' + self.musicdata.duration + ')')
             self.lcd.set_cursor(self.coluna, self.linha)
             self.lcd.message(text)
             #self.lcd.set_cursor(self.coluna, 1)
