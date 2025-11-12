@@ -227,7 +227,7 @@ class displayLCD:
     def __init__(self,musicdata, coluna = 0,  linha = 0, scroll = False, delay= 0.5):
         self.scroll = scroll
         self.delay = delay
-        self.lcd = Adafruit_CharLCD(rs=7, en=8, d4=25, d5=24, d6=23, d7=18, cols=16, lines=2)
+        self.lcd = Adafruit_CharLCD(rs=7, en=8, d4=25, d5=24, d6=23, d7=12, cols=16, lines=2)
 
         self.createSpecialChar()
         #time.sleep(10)
@@ -267,11 +267,11 @@ class displayLCD:
                     #print("maior")
                     self.lcd.set_cursor(self.coluna, self.linha)
                     self.lcd.message(text)
-                    self.lcd.set_cursor(self.coluna, 1)
+                    self.lcd.set_cursor(2, 1)
                     self.lcd.message(str(self.musicdata.elapsed_formatted))
                     #self.lcd.set_cursor(11, 1)
-                    self.lcd.set_cursor(15, 1)
-                    self.lcd.message(self.convertStatusToChar(self.musicdata.status))
+                    self.lcd.set_cursor(0, 1)
+                    self.lcd.message(self.convertStatusToChar(self.musicdata.status) + u' ')
                     time.sleep(0.5)
                     i=0
                     for i in range(len(text) - 15):
@@ -284,17 +284,17 @@ class displayLCD:
                         #self.lcd.clear()
                         self.lcd.set_cursor(self.coluna, self.linha)
                         self.lcd.message(text[i:i+16])
-                        self.lcd.set_cursor(self.coluna, 1)
+                        self.lcd.set_cursor(2, 1)
                         self.lcd.message(str(self.musicdata.elapsed_formatted))
-                        self.lcd.set_cursor(15, 1)
-                        self.lcd.message(self.convertStatusToChar(self.musicdata.status))
+                        self.lcd.set_cursor(0, 1)
+                        self.lcd.message(self.convertStatusToChar(self.musicdata.status) + u' ')
                         time.sleep(self.delay)
                     self.lcd.set_cursor(self.coluna, self.linha)
                     self.lcd.message(text[i:i+16])
-                    self.lcd.set_cursor(self.coluna, 1)
+                    self.lcd.set_cursor(2, 1)
                     self.lcd.message(str(self.musicdata.elapsed_formatted))
-                    self.lcd.set_cursor(15, 1)
-                    self.lcd.message(self.convertStatusToChar(self.musicdata.status))
+                    self.lcd.set_cursor(0, 1)
+                    self.lcd.message(self.convertStatusToChar(self.musicdata.status) + u' ')
                     time.sleep(0.5)
                 else:
                     #print("menor q 16")
@@ -307,10 +307,10 @@ class displayLCD:
                         self.lcd.set_cursor(0, 1)
                         self.lcd.message(u'                ')
                     else:
-                        self.lcd.set_cursor(self.coluna, 1)
+                        self.lcd.set_cursor(2, 1)
                         self.lcd.message(str(self.musicdata.elapsed_formatted))
-                        self.lcd.set_cursor(15, 1)
-                        self.lcd.message(self.convertStatusToChar(self.musicdata.status))
+                        self.lcd.set_cursor(0, 1)
+                        self.lcd.message(self.convertStatusToChar(self.musicdata.status) + u' ')
                         '''self.lcd.set_cursor(12, 1)
                         self.lcd.message(str(self.musicdata[u'status']))'''
                     time.sleep(1)
@@ -323,7 +323,7 @@ class displayLCD:
                     self.lcd.set_cursor(0, 1)
                     self.lcd.message(u'                ')
                 else:
-                    self.lcd.set_cursor(self.coluna, 1)
+                    self.lcd.set_cursor(2, 1)
                     self.lcd.message(str(self.musicdata.elapsed_formatted))
                     self.lcd.set_cursor(12, 1)
                     self.lcd.message(str(self.musicdata.status))
