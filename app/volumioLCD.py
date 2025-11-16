@@ -72,12 +72,13 @@ class socketVolumio:
         self.musicdata.album = playerState[u'album'] if u'album' in playerState else u''
         self.musicdata.artist = playerState[u'artist'] if u'artist' in playerState else u'Volumio'
         self.musicdata.title = playerState[u'title'] if u'title' in playerState else u'V3.0'
+        self.musicdata.uri = playerState[u'uri'] if u'uri' in playerState else u''
         #self.musicdata[u'uri'] self.musicdata.= playerState[u'uri'] if u'uri' in playerState else u''
         self.musicdata.albumArt = playerState[u'albumart'] if u'albumart' in playerState else u''
         self.musicdata.trackType = playerState[u'trackType'] if u'trackType' in playerState else u''
         self.musicdata.codec = playerState[u'codec'] if u'codec' in playerState else u''
         self.musicdata.seek = playerState[u'seek'] if u'seek' in playerState else 0
-        self.musicdata.duration = time.strftime(u"%M:%S", time.gmtime(int(playerState[u'duration']))) if u'duration' in playerState else 0
+        self.musicdata.duration = playerState[u'duration'] if u'duration' in playerState else 0
         self.musicdata.elapsed = int(self.floatn(playerState[u'seek']) / 1000) if u'seek' in playerState else 0
         self.musicdata.samplerate = playerState[u'samplerate'] if u'samplerate' in playerState else u''
         self.musicdata.bitdepth = playerState[u'bitdepth'] if u'bitdepth' in playerState else u''
@@ -87,20 +88,27 @@ class socketVolumio:
         self.musicdata.stream = playerState[u'stream'] if u'stream' in playerState else u''
 
         # if duration is not available, then suppress its display
-        if int(self.musicdata.length) > 0:
+        '''if int(self.musicdata.length) > 0:
             timepos = time.strftime("%M:%S", time.gmtime(int(self.musicdata.elapsed))) + u"/" + time.strftime(
                 "%M:%S", time.gmtime(int(self.musicdata.length)))
             remaining = time.strftime("%-M:%S",
                                       time.gmtime(int(self.musicdata.length) - int(self.musicdata.elapsed)))
-        else:
+        else:'''
+        #timepos = "00:00:00"
+        if time.strftime(u"%H", time.gmtime(int(self.musicdata.duration))) == "00":
             timepos = time.strftime(u"%M:%S", time.gmtime(int(self.musicdata.elapsed)))
+            self.musicdata.durationFormated = time.strftime(u"%M:%S", time.gmtime(
+                int(playerState[u'duration']))) if u'duration' in playerState else 0
+            remaining = timepos
+        else:
+            timepos = time.strftime(u"%H:%M:%S", time.gmtime(int(self.musicdata.elapsed)))
+            self.musicdata.durationFormated = time.strftime(u"%H:%M:%S", time.gmtime(
+                int(playerState[u'duration']))) if u'duration' in playerState else 0
             remaining = timepos
 
         self.musicdata.remaining = remaining
         self.musicdata.elapsed_formatted = timepos
 
-        #print(self.musicdata.remaining)
-        #print(self.musicdata.duration)
 
 class displayLCD:
     _running = False
@@ -148,6 +156,17 @@ class displayLCD:
             0b01000,
         ]
 
+        spotify_char = [
+            0b10011,
+            0b01111,
+            0b10111,
+            0b11011,
+            0b00001,
+            0b11010,
+            0b11001,
+            0b11011,
+        ]
+
         self.lcd.create_char(0, play_char)
         #self.lcd.clear()
         self.lcd.create_char(1, stop_char)
@@ -155,6 +174,7 @@ class displayLCD:
         self.lcd.create_char(2, pause_char)
         #self.lcd.clear()
         self.lcd.create_char(3, cedilha_char)
+        self.lcd.create_char(4, spotify_char)
         self.lcd.clear()
 
     def traduzirAcentos(self,text):
@@ -224,6 +244,12 @@ class displayLCD:
         else:
             return ''
 
+    def returnPlayer(self, player):
+        if player == 'spotify':
+            return ' ' + '\x04' + '                '
+        else:
+            return ' ' + ' ' + '                '
+
     def __init__(self,musicdata, coluna = 0,  linha = 0, scroll = False, delay= 0.5):
         self.scroll = scroll
         self.delay = delay
@@ -253,28 +279,36 @@ class displayLCD:
         #self.lcd.set_cursor(self.coluna, self.linha)
         text = ""
         self.lcd.clear()
+        uriLocal: str
+        uriLocal = u''
         while self._running:
             if self.musicdata.artist == u'' and self.musicdata.title == u'':
                 text = u'  Volumio v3.0  '
             else:
-                text = self.traduzirAcentos(str(self.musicdata.position) + '.' + self.musicdata.artist + ' - ' + self.musicdata.title + ' (' + self.musicdata.duration + ')')
+                text = self.traduzirAcentos(str(self.musicdata.position) + '.' + self.musicdata.artist + ' - ' + self.musicdata.title + ' (' + self.musicdata.durationFormated + ')')
             self.lcd.set_cursor(self.coluna, self.linha)
-            self.lcd.message(text)
-            #self.lcd.set_cursor(self.coluna, 1)
-            #self.lcd.message(str("                "))
+            if len(text) > 16:
+                text2 = text[:16]
+                self.lcd.message(text2)
+            else:
+                self.lcd.message(text)
             if self.scroll:
                 if len(text) > 16:
                     #print("maior")
                     self.lcd.set_cursor(self.coluna, self.linha)
-                    self.lcd.message(text)
-                    self.lcd.set_cursor(2, 1)
-                    self.lcd.message(str(self.musicdata.elapsed_formatted))
-                    #self.lcd.set_cursor(11, 1)
+                    self.lcd.message(text[:16])
                     self.lcd.set_cursor(0, 1)
                     self.lcd.message(self.convertStatusToChar(self.musicdata.status) + u' ')
+                    self.lcd.set_cursor(2, 1)
+                    self.lcd.message(str(self.musicdata.elapsed_formatted) + self.returnPlayer(self.musicdata.trackType))
+                    #self.lcd.set_cursor(11, 1)
+
                     time.sleep(0.5)
                     i=0
                     for i in range(len(text) - 15):
+                        if uriLocal != self.musicdata.uri:
+                            uriLocal = self.musicdata.uri
+                            break
                         if self.musicdata.status == u'stop':
                             break
                         if len(text) < 16:
@@ -284,17 +318,22 @@ class displayLCD:
                         #self.lcd.clear()
                         self.lcd.set_cursor(self.coluna, self.linha)
                         self.lcd.message(text[i:i+16])
-                        self.lcd.set_cursor(2, 1)
-                        self.lcd.message(str(self.musicdata.elapsed_formatted))
                         self.lcd.set_cursor(0, 1)
                         self.lcd.message(self.convertStatusToChar(self.musicdata.status) + u' ')
+                        self.lcd.set_cursor(2, 1)
+                        #> 00:00 spotify
+                        #________________
+
+                        self.lcd.message(str(self.musicdata.elapsed_formatted) + self.returnPlayer(self.musicdata.trackType))
+
                         time.sleep(self.delay)
                     self.lcd.set_cursor(self.coluna, self.linha)
                     self.lcd.message(text[i:i+16])
-                    self.lcd.set_cursor(2, 1)
-                    self.lcd.message(str(self.musicdata.elapsed_formatted))
                     self.lcd.set_cursor(0, 1)
                     self.lcd.message(self.convertStatusToChar(self.musicdata.status) + u' ')
+                    self.lcd.set_cursor(2, 1)
+                    self.lcd.message(str(self.musicdata.elapsed_formatted) + self.returnPlayer(self.musicdata.trackType))
+
                     time.sleep(0.5)
                 else:
                     #print("menor q 16")
@@ -307,12 +346,12 @@ class displayLCD:
                         self.lcd.set_cursor(0, 1)
                         self.lcd.message(u'                ')
                     else:
-                        self.lcd.set_cursor(2, 1)
-                        self.lcd.message(str(self.musicdata.elapsed_formatted))
                         self.lcd.set_cursor(0, 1)
                         self.lcd.message(self.convertStatusToChar(self.musicdata.status) + u' ')
-                        '''self.lcd.set_cursor(12, 1)
-                        self.lcd.message(str(self.musicdata[u'status']))'''
+                        self.lcd.set_cursor(2, 1)
+                        self.lcd.message(str(self.musicdata.elapsed_formatted) + self.returnPlayer(self.musicdata.trackType))
+
+
                     time.sleep(1)
             else:
                 if not self._running:

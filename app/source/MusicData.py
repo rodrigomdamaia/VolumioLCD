@@ -5,13 +5,15 @@ class MusicData:
     artist: str
     title: str
     album: str
+    uri: str
     albumArt: str
     trackType: str
     trackArt: str
     codec: str
     seek: int
     elapsed: float
-    duration: str
+    duration: float
+    durationFormated: str
     length: int
     samplerate: str
     bitdepth: str
