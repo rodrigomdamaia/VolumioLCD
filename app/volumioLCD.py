@@ -4,6 +4,7 @@ from Adafruit_CharLCD import Adafruit_CharLCD
 from .source import MusicData as md
 from socketIO_client import SocketIO
 import socketio
+from enum import Enum
 
 class socketVolumio:
     def __init__(self):
@@ -109,6 +110,11 @@ class socketVolumio:
         self.musicdata.remaining = remaining
         self.musicdata.elapsed_formatted = timepos
 
+class MaquinaDisplay(Enum):
+    DISPLAY_INICIO = 0
+    DISPLAY_RECEBE_TEXTO = 1
+    DISPLAY_MOSTRA_TEXTO = 2
+    DISPLAY_SCROLL_TEXTO = 3
 
 class displayLCD:
     _running = False
@@ -274,6 +280,51 @@ class displayLCD:
     def stop(self):
         self._running = False
         self._thread.join()
+
+    def update_new(self):
+        self.lcd.clear()
+        text: str=""
+        text1: str=""
+        uri_local: str="vazio"
+        maquinaDisplay: MaquinaDisplay = MaquinaDisplay.DISPLAY_INICIO
+        i: int=0
+        a: int=1
+        while self._running:
+            if maquinaDisplay == MaquinaDisplay.DISPLAY_INICIO:
+                maquinaDisplay = maquinaDisplay.DISPLAY_RECEBE_TEXTO
+            elif maquinaDisplay == MaquinaDisplay.DISPLAY_RECEBE_TEXTO:
+                if not uri_local == self.musicdata.uri:
+                    uri_local = self.musicdata.uri
+                    text1 = self.traduzirAcentos(str(self.musicdata.position) + '.' + self.musicdata.artist + ' - ' +
+                                                self.musicdata.title + ' (' + self.musicdata.durationFormated + ')***')
+                    text = text1
+                    maquinaDisplay = maquinaDisplay.DISPLAY_MOSTRA_TEXTO
+            elif maquinaDisplay == MaquinaDisplay.DISPLAY_MOSTRA_TEXTO:
+                if len(text) > 16:
+                    self.lcd.set_cursor(self.coluna, self.linha)
+                    self.lcd.message(text[:16])
+                    maquinaDisplay = MaquinaDisplay.DISPLAY_SCROLL_TEXTO
+                else:
+                    self.lcd.message(text)
+                    maquinaDisplay = MaquinaDisplay.DISPLAY_RECEBE_TEXTO
+            elif maquinaDisplay == MaquinaDisplay.DISPLAY_SCROLL_TEXTO:
+                if not uri_local == self.musicdata.uri:
+                    uri_local = self.musicdata.uri
+                    text1 = self.traduzirAcentos(str(self.musicdata.position) + '.' + self.musicdata.artist + ' - ' +
+                                                 self.musicdata.title + ' (' + self.musicdata.durationFormated + ')***')
+                    text = text1
+                    i = 0
+                    maquinaDisplay = maquinaDisplay.DISPLAY_MOSTRA_TEXTO
+                else:
+                    self.lcd.set_cursor(self.coluna, self.linha)
+                    self.lcd.message(text[i:i + 16].ljust(16))
+                    i += 1
+                    time.sleep(.3)
+                    if i == len(text) - 16:
+                        i=0
+
+
+
 
     def update(self):
         #self.lcd.set_cursor(self.coluna, self.linha)
